@@ -197,49 +197,49 @@ export function ApplyForm({
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-        <div>
-          <label htmlFor="apply-years-experience" className="sr-only">
-            Years of experience
-          </label>
-          <input
-            id="apply-years-experience"
-            name="years_experience"
-            type="number"
-            min={0}
-            required
-            placeholder="Yrs experience"
-            className="field"
-          />
-        </div>
-        <div>
-          <label htmlFor="apply-expected-salary" className="sr-only">
-            Expected salary
-          </label>
-          <input
-            id="apply-expected-salary"
-            name="expected_salary"
-            type="number"
-            min={0}
-            required
-            placeholder="Expected salary"
-            className="field"
-          />
-        </div>
-        <div>
-          <label htmlFor="apply-current-salary" className="sr-only">
-            Current / last salary
-          </label>
-          <input
-            id="apply-current-salary"
-            name="current_salary"
-            type="number"
-            min={0}
-            required
-            placeholder="Current/last salary"
-            className="field"
-          />
-        </div>
+      <div>
+        <label htmlFor="apply-years-experience" className="sr-only">
+          Years of experience
+        </label>
+        <input
+          id="apply-years-experience"
+          name="years_experience"
+          type="number"
+          min={0}
+          required
+          placeholder="Years of experience"
+          className="field"
+        />
+      </div>
+
+      <div>
+        <label htmlFor="apply-expected-salary" className="sr-only">
+          Expected salary
+        </label>
+        <input
+          id="apply-expected-salary"
+          name="expected_salary"
+          type="number"
+          min={0}
+          required
+          placeholder="Expected salary"
+          className="field"
+        />
+      </div>
+
+      <div>
+        <label htmlFor="apply-current-salary" className="sr-only">
+          Current / last salary
+        </label>
+        <input
+          id="apply-current-salary"
+          name="current_salary"
+          type="number"
+          min={0}
+          required
+          placeholder="Current / last salary"
+          className="field"
+        />
       </div>
 
       <p className="text-xs text-muted">
