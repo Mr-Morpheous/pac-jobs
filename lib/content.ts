@@ -160,39 +160,33 @@ export const job = {
 
 /** Brief §7 — the auth gate. */
 /**
- * Data-consent clause shown at the bottom of the apply form (migration 033).
- *
- * PLACEHOLDER TEXT — not legal advice, not reviewed by counsel. Structure
- * (what's collected, why, retention, rights, CV-specific handling) is a
- * reasonable starting shape, but the actual wording needs sign-off from the
- * user or a lawyer before this ships. `version` must be bumped (e.g. to a
+ * Applicant declaration and data-consent clause shown at the bottom of the
+ * apply form (migration 033). User-approved wording as of 19 September 2026
+ * — combines the applicant declaration (accuracy of info, background checks)
+ * with the data consent (GDPR/Kenya DPA). `version` must be bumped (e.g. to a
  * date string) any time the wording below changes — it's what
  * applications.consent_version records, so a past applicant's row always
  * reflects what they actually agreed to, not today's text relabeled.
  */
 export const dataConsent = {
-  version: "2026-08-26-v1",
+  version: "2026-09-19-v1",
   checkboxLabel: "I have read this and I consent.",
   scrollHint: "Scroll to the bottom to continue.",
-  clauseText: `By applying, you agree that PAC Africa may collect and process the
-information in this application — including your CV, contact details, work
-history and the fields above — to evaluate you for this role and, if you
-create an account, to match you with similar roles in future.
+  clauseText: `Applicant Declaration and Data Consent
 
-Your CV and application details are shared only with the employer for the
-specific role you apply to, and with PAC Africa staff reviewing applications.
-We do not sell your data or share it with any other third party.
+I represent that the information given in this application, and in any resume or supporting documents submitted with it, is true and complete to the best of my knowledge. I understand that any incomplete, misleading, or false statement in my application, resume, or during an interview may result in disqualification from consideration or, if I am hired, termination of my employment.
 
-Data is retained for as long as your account is active, or for historical
-applications, indefinitely as part of PAC Africa's hiring records, unless you
-request deletion. You can request a copy of your data or ask us to delete it
-at any time — see our Privacy Policy for how.
+I authorize PAC Africa and the hiring employer to verify the information I have provided and to carry out any background checks reasonably necessary, including employment history, education, and reference checks, and, where applicable and permitted by law, criminal history checks, both at the time of application and, if I am hired, during my employment.
 
-This consent is given under the Kenya Data Protection Act 2019 and, where
-applicable, the EU General Data Protection Regulation (GDPR). You may
-withdraw consent at any time by contacting hello@pac.africa, which stops
-further processing but does not undo an application already sent to an
-employer.`,
+By applying, I agree that PAC Africa may collect and process the information in this application, including my CV, contact details, work history, and the fields above, to evaluate me for this role and, if I create an account, to match me with similar roles in future.
+
+I understand that my CV and application details are shared only with the employer for the specific role I apply to, and with PAC Africa staff reviewing applications. PAC Africa does not sell my data or share it with any other third party.
+
+I understand that my data is retained for as long as my account is active. Historical applications may be kept indefinitely as part of PAC Africa's hiring records unless I request deletion. I can request a copy of my data or ask PAC Africa to delete it at any time; details are set out in the Privacy Policy.
+
+I give this consent under the Kenya Data Protection Act, 2019, and, where applicable, the EU General Data Protection Regulation (GDPR). I understand that I may withdraw this consent at any time by contacting hello@pac.africa, and that withdrawing consent stops further processing but does not undo an application already sent to an employer.
+
+I have read and fully understand this declaration and consent, and I confirm that I am applying for this role on these terms. I understand that my application will only be considered complete once my employment history, education history, and all required application questions have been filled in.`,
 } as const;
 
 export const gate = {

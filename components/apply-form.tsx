@@ -197,7 +197,7 @@ export function ApplyForm({
         />
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         <div>
           <label htmlFor="apply-years-experience" className="sr-only">
             Years of experience
@@ -241,6 +241,11 @@ export function ApplyForm({
           />
         </div>
       </div>
+
+      <p className="text-xs text-muted">
+        Kept confidential — shared only with the employer reviewing this
+        application, never sold or given to anyone else.
+      </p>
 
       <div>
         <label htmlFor="apply-cover" className="sr-only">
