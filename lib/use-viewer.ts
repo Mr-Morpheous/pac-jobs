@@ -13,6 +13,30 @@ const SIGNED_OUT: ViewerResponse = {
 };
 
 /**
+ * Up to 9 components call useViewer() independently on a single page (nav,
+ * personalization, job cards, apply panel...), each previously firing its
+ * own `/api/viewer` request on mount — a job detail page alone fired ~5.
+ * This in-flight cache collapses concurrent calls for the same query string
+ * into one real fetch; every other caller just awaits the same promise.
+ * Deleted as soon as it resolves, so it never serves stale data across
+ * separate page loads, only dedupes the simultaneous mounts of one.
+ */
+const inFlight = new Map<string, Promise<ViewerResponse>>();
+
+function fetchViewer(qs: string): Promise<ViewerResponse> {
+  const existing = inFlight.get(qs);
+  if (existing) return existing;
+  const promise = fetch(`/api/viewer${qs}`)
+    .then((r) => (r.ok ? (r.json() as Promise<ViewerResponse>) : SIGNED_OUT))
+    .catch(() => SIGNED_OUT)
+    .finally(() => {
+      inFlight.delete(qs);
+    });
+  inFlight.set(qs, promise);
+  return promise;
+}
+
+/**
  * Fetches `/api/viewer` once on mount. Every page using this renders the
  * signed-out shape first (matching the server-rendered fallback exactly, so
  * there's no layout shift) and swaps in the real viewer state once it
@@ -26,13 +50,9 @@ export function useViewer(jobId?: string): { data: ViewerResponse; loading: bool
   useEffect(() => {
     let active = true;
     const qs = jobId ? `?jobId=${encodeURIComponent(jobId)}` : "";
-    fetch(`/api/viewer${qs}`)
-      .then((r) => (r.ok ? (r.json() as Promise<ViewerResponse>) : SIGNED_OUT))
+    fetchViewer(qs)
       .then((d) => {
         if (active) setData(d);
-      })
-      .catch(() => {
-        // Stay on the signed-out default.
       })
       .finally(() => {
         if (active) setLoading(false);
