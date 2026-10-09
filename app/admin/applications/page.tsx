@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { unstable_cache } from "next/cache";
-import { Search, ChevronLeft, ChevronRight, Phone, Mail } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Phone, Mail, SlidersHorizontal } from "lucide-react";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -397,9 +397,10 @@ export default async function AdminApplicationsPage({
       </form>
 
       {/* FILTERS ------------------------------------------------------ */}
-      <div className="flex flex-wrap items-center gap-2 mt-4">
+      <div className="flex flex-wrap items-start gap-4 mt-4">
+      <div className="flex flex-wrap items-center gap-2">
         <FilterChip label="All" active={!params.status} to={href(params, { status: null, page: null, id: null })} />
-        {STATUSES.map((s) => (
+        {STATUSES.filter((s) => s !== "rejected" && s !== "hired").map((s) => (
           <FilterChip
             key={s}
             label={s}
@@ -407,58 +408,6 @@ export default async function AdminApplicationsPage({
             to={href(params, { status: s, page: null, id: null })}
           />
         ))}
-        <span className="w-px h-5 bg-line mx-1" aria-hidden />
-        <FilterChip
-          label="Archive"
-          active={params.source === "historical"}
-          to={href(params, {
-            source: params.source === "historical" ? null : "historical",
-            page: null,
-            id: null,
-          })}
-        />
-        <FilterChip
-          label="Since relaunch"
-          active={params.source === "new"}
-          to={href(params, { source: params.source === "new" ? null : "new", page: null, id: null })}
-        />
-        <span className="w-px h-5 bg-line mx-1" aria-hidden />
-        <FilterChip
-          label="CV on old site"
-          active={params.cv === "legacy"}
-          to={href(params, { cv: params.cv === "legacy" ? null : "legacy", page: null, id: null })}
-        />
-        <FilterChip
-          label="CV migrated"
-          active={params.cv === "migrated"}
-          to={href(params, { cv: params.cv === "migrated" ? null : "migrated", page: null, id: null })}
-        />
-        <FilterChip
-          label="No CV"
-          active={params.cv === "none"}
-          to={href(params, { cv: params.cv === "none" ? null : "none", page: null, id: null })}
-        />
-        <span className="w-px h-5 bg-line mx-1" aria-hidden />
-        {/* Every archive row starts unclaimed, so this is how you find who has
-            come back and reconnected their history. */}
-        <FilterChip
-          label="Claimed"
-          active={params.claimed === "yes"}
-          to={href(params, {
-            claimed: params.claimed === "yes" ? null : "yes",
-            page: null,
-            id: null,
-          })}
-        />
-        <FilterChip
-          label="Unclaimed"
-          active={params.claimed === "no"}
-          to={href(params, {
-            claimed: params.claimed === "no" ? null : "no",
-            page: null,
-            id: null,
-          })}
-        />
         <span className="w-px h-5 bg-line mx-1" aria-hidden />
         <FilterChip
           label="Below requirements"
@@ -519,6 +468,9 @@ export default async function AdminApplicationsPage({
             Clear all
           </Link>
         )}
+      </div>
+
+      <MoreFiltersPanel params={params} />
       </div>
 
       <div className="flex items-baseline justify-between gap-4 mt-6 mb-3">
@@ -727,6 +679,115 @@ function FilterChip({
   active: boolean;
   to: string;
 }) {
+  return (
+    <Link href={to} className={`chip ${active ? "chip-active" : ""} capitalize`}>
+      {label}
+    </Link>
+  );
+}
+
+function MoreFiltersPanel({ params }: { params: Params }) {
+  const hasHiddenFilter =
+    params.status === "rejected" ||
+    params.status === "hired" ||
+    Boolean(params.source) ||
+    Boolean(params.cv) ||
+    Boolean(params.claimed);
+
+  return (
+    <details className="clay group p-3">
+      <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-medium text-ink">
+        <SlidersHorizontal className="h-4 w-4" aria-hidden />
+        More filters
+        {hasHiddenFilter && (
+          <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden />
+        )}
+      </summary>
+      <div className="relative">
+        <div className="clay absolute left-0 top-2 z-10 w-72 space-y-6 p-5 shadow-clay-lifted">
+          <FilterGroup title="Status">
+            <ChipLink
+              label="rejected"
+              active={params.status === "rejected"}
+              to={href(params, { status: params.status === "rejected" ? null : "rejected", page: null, id: null })}
+            />
+            <ChipLink
+              label="hired"
+              active={params.status === "hired"}
+              to={href(params, { status: params.status === "hired" ? null : "hired", page: null, id: null })}
+            />
+          </FilterGroup>
+          <FilterGroup title="Source">
+            <ChipLink
+              label="Archive"
+              active={params.source === "historical"}
+              to={href(params, {
+                source: params.source === "historical" ? null : "historical",
+                page: null,
+                id: null,
+              })}
+            />
+            <ChipLink
+              label="Since relaunch"
+              active={params.source === "new"}
+              to={href(params, { source: params.source === "new" ? null : "new", page: null, id: null })}
+            />
+          </FilterGroup>
+          <FilterGroup title="CV">
+            <ChipLink
+              label="CV on old site"
+              active={params.cv === "legacy"}
+              to={href(params, { cv: params.cv === "legacy" ? null : "legacy", page: null, id: null })}
+            />
+            <ChipLink
+              label="CV migrated"
+              active={params.cv === "migrated"}
+              to={href(params, { cv: params.cv === "migrated" ? null : "migrated", page: null, id: null })}
+            />
+            <ChipLink
+              label="No CV"
+              active={params.cv === "none"}
+              to={href(params, { cv: params.cv === "none" ? null : "none", page: null, id: null })}
+            />
+          </FilterGroup>
+          {/* Every archive row starts unclaimed, so this is how you find who has
+              come back and reconnected their history. */}
+          <FilterGroup title="Claimed">
+            <ChipLink
+              label="Claimed"
+              active={params.claimed === "yes"}
+              to={href(params, {
+                claimed: params.claimed === "yes" ? null : "yes",
+                page: null,
+                id: null,
+              })}
+            />
+            <ChipLink
+              label="Unclaimed"
+              active={params.claimed === "no"}
+              to={href(params, {
+                claimed: params.claimed === "no" ? null : "no",
+                page: null,
+                id: null,
+              })}
+            />
+          </FilterGroup>
+        </div>
+      </div>
+    </details>
+  );
+}
+
+function FilterGroup({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <h2 className="eyebrow mb-2.5">{title}</h2>
+      <div className="flex flex-wrap gap-1.5">{children}</div>
+    </div>
+  );
+}
+
+function ChipLink({ label, active, to }: { label: string; active: boolean; to: string }) {
   return (
     <Link href={to} className={`chip ${active ? "chip-active" : ""} capitalize`}>
       {label}

@@ -330,6 +330,10 @@ export interface Database {
         Args: Record<string, never>;
         Returns: { live_jobs: number; applications: number; employers: number }[];
       };
+      activity_bands: {
+        Args: Record<string, never>;
+        Returns: { recent_band: number | null; total_band: number | null }[];
+      };
       is_admin: {
         Args: Record<string, never>;
         Returns: boolean;

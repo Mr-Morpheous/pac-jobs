@@ -1,14 +1,9 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { Search, X, SlidersHorizontal, ChevronLeft, ChevronRight } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
 import { createPublicClient } from "@/lib/supabase/public";
 import { unstable_cache } from "next/cache";
-import { postJobHref } from "@/lib/auth";
-import { JobCard } from "@/components/job-card";
-import { Reveal } from "@/components/reveal";
-import { EmptyState } from "@/components/dashboard-ui";
-import { matchPercent } from "@/lib/match";
+import { ResultsEmpty, ResultsGrid } from "@/components/jobs-results";
 import {
   browse,
   jobTypeLabels,
@@ -22,7 +17,6 @@ import type {
   JobCategory,
   JobLocation,
   JobType,
-  UserRole,
 } from "@/types/database";
 
 export const revalidate = 120;
@@ -148,13 +142,9 @@ export default async function JobsPage({
   searchParams: Promise<Params>;
 }) {
   const params = await searchParams;
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const page = Math.max(1, Number.parseInt(params.page ?? "1", 10) || 1);
   const from = (page - 1) * PER_PAGE;
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
   let query = supabase
     .from("jobs")
@@ -193,7 +183,7 @@ export default async function JobsPage({
     query = query.order("created_at", { ascending: params.sort === "oldest" });
   }
 
-  const [{ data, count, error }, filters, savedRow, roleRow] = await Promise.all([
+  const [{ data, count, error }, filters] = await Promise.all([
     query.range(from, from + PER_PAGE - 1),
     (async () => {
       const [categories, locations] = await Promise.all([
@@ -202,23 +192,11 @@ export default async function JobsPage({
       ]);
       return { categories, locations };
     })(),
-    user
-      ? supabase.from("saved_jobs").select("job_id")
-      : Promise.resolve({ data: null }),
-    user
-      ? supabase.from("profiles").select("role, skills").eq("id", user.id).single()
-      : Promise.resolve({ data: null }),
   ]);
 
   const jobs = (data as unknown as Job[]) ?? [];
   const total = count ?? 0;
   const lastPage = Math.max(1, Math.ceil(total / PER_PAGE));
-  const savedIds = new Set(
-    ((savedRow?.data as { job_id: string }[] | null) ?? []).map((s) => s.job_id)
-  );
-  const role = (roleRow?.data?.role as UserRole | undefined) ?? null;
-  const seekerSkills =
-    role === "seeker" ? ((roleRow?.data as { skills: string[] | null })?.skills ?? null) : null;
 
   const active = [
     params.q && { label: `“${params.q}”`, clear: href(params, { q: null, page: null }) },
@@ -345,35 +323,10 @@ export default async function JobsPage({
               <p className="mt-2 text-sm text-muted">{error.message}</p>
             </div>
           ) : jobs.length === 0 ? (
-            <EmptyState
-              title={browse.emptyTitle}
-              body={browse.emptyBody}
-              action={
-                <>
-                  <Link href="/jobs" className="btn-primary">
-                    {browse.clearAll}
-                  </Link>
-                  <Link href={postJobHref(role)} className="btn-ghost">
-                    {browse.emptyEmployerNudge}
-                  </Link>
-                </>
-              }
-            />
+            <ResultsEmpty />
           ) : (
             <>
-              <div className="grid gap-4 sm:grid-cols-2">
-                {jobs.map((row, i) => (
-                  <Reveal key={row.id} delay={Math.min(i * 0.03, 0.18)}>
-                    <JobCard
-                      job={row}
-                      saved={savedIds.has(row.id)}
-                      showSave={Boolean(user)}
-                      returnTo={href(params, {})}
-                      matchPercent={matchPercent(row.required_skills, seekerSkills)}
-                    />
-                  </Reveal>
-                ))}
-              </div>
+              <ResultsGrid jobs={jobs} returnTo={href(params, {})} />
 
               <div className="mt-8 flex items-center justify-between gap-4">
                 <p className="text-xs text-muted">

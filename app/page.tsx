@@ -1,13 +1,13 @@
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import { unstable_cache } from "next/cache";
 import { ArrowRight, Check } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
-import { postJobHref } from "@/lib/auth";
-import { JobCard } from "@/components/job-card";
+import { createPublicClient } from "@/lib/supabase/public";
+import { HeroCtas, FeedGrid } from "@/components/home-personalization";
 import { Reveal } from "@/components/reveal";
 import { Meteors } from "@/components/meteors";
 import { home } from "@/lib/content";
-import type { Job, UserRole } from "@/types/database";
+import type { Job } from "@/types/database";
 import type { Metadata } from "next";
 
 // Previously absent — the homepage inherited the root layout's generic
@@ -50,6 +50,59 @@ const SELECT = `
 `;
 
 /**
+ * Public content — no session needed, so this runs on the anon-key client
+ * inside unstable_cache and is what actually gets served from the ISR cache.
+ * Auth/saved-job state lives client-side instead (`components/home-personalization.tsx`
+ * + `app/api/viewer/route.ts`) — reading cookies() here, as the old
+ * cookie-bound client did, would force this whole route dynamic regardless
+ * of the `revalidate` export above.
+ */
+const getFeedJobs = unstable_cache(
+  async (): Promise<Job[]> => {
+    const supabase = createPublicClient();
+    const { data } = await supabase
+      .from("jobs")
+      .select(SELECT)
+      .eq("status", "published")
+      .order("created_at", { ascending: false })
+      .limit(FEED_SIZE);
+    return (data as unknown as Job[]) ?? [];
+  },
+  ["homepage-feed"],
+  { revalidate: 120 }
+);
+
+/** Top 6 categories with live roles — GROUP BY in the DB, not in JS. */
+const getTopCategories = unstable_cache(
+  async (): Promise<{ id: string; name: string }[]> => {
+    const supabase = createPublicClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase as any).rpc("top_job_categories", { limit_n: 6 });
+    return (data as { id: string; name: string }[] | null) ?? [];
+  },
+  ["homepage-top-categories"],
+  { revalidate: 120 }
+);
+
+/**
+ * Banded (never exact) applications-this-week / applications-total figures.
+ * See migration 034 — a narrower replacement for the stat bar migration 011
+ * deliberately removed, not a reversal of that decision: the numbers here
+ * are rounded server-side and can't be sharpened by calling the RPC directly.
+ */
+const getActivityBands = unstable_cache(
+  async (): Promise<{ recentBand: number | null; totalBand: number | null }> => {
+    const supabase = createPublicClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase as any).rpc("activity_bands");
+    const row = (data as { recent_band: number | null; total_band: number | null }[] | null)?.[0];
+    return { recentBand: row?.recent_band ?? null, totalBand: row?.total_band ?? null };
+  },
+  ["homepage-activity-bands"],
+  { revalidate: 120 }
+);
+
+/**
  * Homepage.
  *
  * The hero leads with search rather than only the two pills the brief describes.
@@ -62,46 +115,11 @@ const SELECT = `
  * there is no hero image.
  */
 export default async function HomePage() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const [{ data: jobs }, roleRow, savedRow, { data: popular }] =
-    await Promise.all([
-      supabase
-        .from("jobs")
-        .select(SELECT)
-        .eq("status", "published")
-        .order("created_at", { ascending: false })
-        .limit(FEED_SIZE),
-      user
-        ? supabase.from("profiles").select("role").eq("id", user.id).single()
-        : Promise.resolve({ data: null }),
-      user ? supabase.from("saved_jobs").select("job_id") : Promise.resolve({ data: null }),
-      // Top 6 categories with live roles — GROUP BY in the DB, not in JS.
-      // Previously fetched 200 job rows and counted in JS; this fetches 6 rows.
-      // Cast to any: top_job_categories is defined in migration 027 but not
-      // yet in the generated types/database.ts — the RPC exists in the DB.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase as any).rpc("top_job_categories", { limit_n: 6 }),
-    ]);
-
-  const role = (roleRow?.data?.role as UserRole | undefined) ?? null;
-  const rows = (jobs as unknown as Job[]) ?? [];
-  const savedIds = new Set(
-    ((savedRow?.data as { job_id: string }[] | null) ?? []).map((s) => s.job_id)
-  );
-
-  const topCategories = (
-    (popular?.data as { id: string; name: string }[] | null) ?? []
-  );
-
-  // The seeker CTA's twin of postJobHref: signup for a stranger, the listings
-  // for someone already signed in. `next` is a fixed literal, so there is no
-  // open-redirect surface here.
-  const seekerHref = role ? "/jobs" : "/auth/signup?next=/jobs";
+  const [rows, topCategories, activityBands] = await Promise.all([
+    getFeedJobs(),
+    getTopCategories(),
+    getActivityBands(),
+  ]);
 
   return (
     <>
@@ -132,21 +150,7 @@ export default async function HomePage() {
 
               <Reveal delay={0.12}>
                 <div className="mt-9 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
-                  {/* Both sides of the marketplace, named for what each visitor
-                      wants. A signed-out visitor goes to signup carrying where they
-                      were headed; a signed-in one skips it and lands on the page
-                      that is actually useful to them. */}
-                  <Link href={seekerHref} className="btn-accent px-7 py-3">
-                    {home.seekerCta}
-                  </Link>
-                  {/* Rounded secondary with the arrow nudge, per the reference. */}
-                  <Link href={postJobHref(role)} className="btn-primary group px-7 py-3">
-                    {home.employerCta}
-                    <ArrowRight
-                      className="h-4 w-4 transition-transform duration-200 ease-out group-hover:translate-x-1 motion-safe:animate-nudge motion-safe:group-hover:animate-none"
-                      aria-hidden
-                    />
-                  </Link>
+                  <HeroCtas />
                 </div>
               </Reveal>
 
@@ -196,6 +200,16 @@ export default async function HomePage() {
                 </li>
               ))}
             </ul>
+            {(activityBands.recentBand || activityBands.totalBand) && (
+              <p className="mt-4 text-center text-xs text-muted sm:text-left">
+                {[
+                  activityBands.recentBand && home.activityRecent(activityBands.recentBand),
+                  activityBands.totalBand && home.activityTotal(activityBands.totalBand),
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+            )}
           </Reveal>
         </div>
       </section>
@@ -215,35 +229,7 @@ export default async function HomePage() {
           </Link>
         </div>
 
-        {rows.length === 0 ? (
-          <div className="clay p-10 text-center md:p-16">
-            <p className="font-display text-lg font-600 text-ink">{home.emptyTitle}</p>
-            <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted">
-              {home.emptyBody}
-            </p>
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-              <Link href={postJobHref(role)} className="btn-primary">
-                {home.postCta}
-              </Link>
-              <Link href="/jobs" className="btn-ghost">
-                {home.browseCta}
-              </Link>
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {rows.map((row, i) => (
-              <Reveal key={row.id} delay={Math.min(i * 0.04, 0.24)}>
-                <JobCard
-                  job={row}
-                  saved={savedIds.has(row.id)}
-                  showSave={Boolean(user)}
-                  returnTo="/"
-                />
-              </Reveal>
-            ))}
-          </div>
-        )}
+        <FeedGrid rows={rows} />
       </section>
     </>
   );

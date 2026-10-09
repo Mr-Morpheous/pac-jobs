@@ -37,6 +37,7 @@ Run in numerical order. Every file is idempotent — safe to re-run.
 | 031 | `031_employer_work_email_and_job_skills.sql` | work-email-only employer signup, `jobs.required_skills` | **applied** (confirmed 2026-08-31) |
 | 032 | `032_candidate_matches.sql` | `candidate_matches()` RPC, ranks seekers against a job's required skills | **applied** (confirmed 2026-08-31) |
 | 033 | `033_hiring_profile_and_requirements.sql` | multi-entry education/work experience, job requirements, `meets_requirements` flag, apply-time consent | **applied** (confirmed 2026-08-31) |
+| 034 | `034_public_activity_banding.sql` | `activity_bands()` — banded (never exact) applications-this-week/total for the homepage | **applied** (confirmed 2026-09-21) |
 
 ## Why these exist
 

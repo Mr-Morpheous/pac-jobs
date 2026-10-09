@@ -62,12 +62,19 @@ export const home = {
   browseCta: "Browse roles",
   postCta: "Post a job",
   popular: "Popular",
-  // Trust without numbers — the counts were deliberately removed.
+  // Trust without exact numbers. Migration 011 deliberately took the precise
+  // application count off this page (and off the API) — commercially
+  // sensitive, and an exact figure also advertises exactly how much personal
+  // data sits behind the site. `activityRecent`/`activityTotal` below are the
+  // narrower replacement: both banded server-side (migration 034), never
+  // exact, so this stays true to that decision rather than reversing it.
   trust: [
     "Every listing reviewed before it publishes",
     "Apply once, track it in one place",
     "Your CV is never public",
   ],
+  activityRecent: (band: number) => `${band.toLocaleString()}+ applications this week`,
+  activityTotal: (band: number) => `${band.toLocaleString()}+ since launch`,
   latest: "Latest roles",
   viewAll: "View all jobs",
   emptyTitle: "No roles are live right now",
@@ -172,9 +179,7 @@ export const dataConsent = {
   version: "2026-09-19-v1",
   checkboxLabel: "I have read this and I consent.",
   scrollHint: "Scroll to the bottom to continue.",
-  clauseText: `Applicant Declaration and Data Consent
-
-I represent that the information given in this application, and in any resume or supporting documents submitted with it, is true and complete to the best of my knowledge. I understand that any incomplete, misleading, or false statement in my application, resume, or during an interview may result in disqualification from consideration or, if I am hired, termination of my employment.
+  clauseText: `I represent that the information given in this application, and in any resume or supporting documents submitted with it, is true and complete to the best of my knowledge. I understand that any incomplete, misleading, or false statement in my application, resume, or during an interview may result in disqualification from consideration or, if I am hired, termination of my employment.
 
 I authorize PAC Africa and the hiring employer to verify the information I have provided and to carry out any background checks reasonably necessary, including employment history, education, and reference checks, and, where applicable and permitted by law, criminal history checks, both at the time of application and, if I am hired, during my employment.
 

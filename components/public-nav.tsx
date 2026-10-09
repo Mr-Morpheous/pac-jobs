@@ -7,17 +7,28 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import { ThemeToggle } from "@/components/theme";
+import { useViewer } from "@/lib/use-viewer";
+import { dashboardPathFor, postJobHref } from "@/lib/role-routes";
 import { nav, site } from "@/lib/content";
 import { lockScroll, unlockScroll } from "@/lib/scroll-lock";
 
-export type NavLinks = {
-  /** Resolved on the server so the gate never flashes the wrong destination. */
-  postHref: string;
-  dashboardHref: string | null;
-  signedIn: boolean;
-};
+/**
+ * Auth state resolved client-side via `useViewer` — this renders in the root
+ * layout on every route, so resolving it server-side (as it used to, reading
+ * cookies() through lib/supabase/server.ts) forced every single page in the
+ * app to render dynamically, static informational pages included. Signed-out
+ * is the default render, matching the majority of traffic (anonymous
+ * visitors, crawlers); a signed-in visitor sees a brief swap to their real
+ * nav after hydration instead of the old zero-flash server render, and the
+ * sign-in/sign-out links here no longer work with JavaScript disabled — both
+ * deliberate trade-offs for making the rest of the site cacheable.
+ */
+export function PublicNav() {
+  const { data } = useViewer();
+  const signedIn = data.signedIn;
+  const dashboardHref = data.role ? dashboardPathFor(data.role) : null;
+  const postHref = postJobHref(data.role);
 
-export function PublicNav({ postHref, dashboardHref, signedIn }: NavLinks) {
   const { scrollY } = useScroll();
   const [compact, setCompact] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);

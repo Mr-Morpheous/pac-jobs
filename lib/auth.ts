@@ -2,30 +2,13 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isLegacyCvUrl } from "@/lib/cv";
 import { isProfileGateComplete } from "@/lib/profile";
+import { dashboardPathFor } from "@/lib/role-routes";
 import type { Profile, UserRole } from "@/types/database";
 
-/**
- * Where a given role belongs after signing in.
- */
-export function dashboardPathFor(role: UserRole): string {
-  if (role === "admin") return "/admin";
-  if (role === "employer") return "/dashboard/employer";
-  return "/dashboard/seeker";
-}
-
-/**
- * Where "Post a Job" should go for a given role (brief §7).
- *
- * Computed server-side so the gate is settled on first paint — the nav and the
- * homepage hero both use this, and neither needs client logic to work out where
- * the button points.
- */
-export function postJobHref(role: UserRole | null): string {
-  if (role === "employer") return "/dashboard/employer/post";
-  if (role === "admin") return "/admin/jobs/new";
-  if (role === "seeker") return "/post-a-job";
-  return "/auth/signup?next=/post-a-job";
-}
+// dashboardPathFor/postJobHref moved to lib/role-routes.ts (no server
+// imports there) so client components can use postJobHref directly.
+// Re-exported here so existing server-side callers are unaffected.
+export { dashboardPathFor, postJobHref } from "@/lib/role-routes";
 
 /**
  * Requires a signed-in user with a profile row, and hands back the Supabase

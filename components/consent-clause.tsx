@@ -35,9 +35,10 @@ export function ConsentClause({
 
   return (
     <div>
+      <p className="eyebrow mb-1.5">Applicant declaration &amp; data consent</p>
       <div
         onScroll={handleScroll}
-        className="clay-inset h-40 overflow-y-auto whitespace-pre-line rounded-card p-4 text-xs leading-relaxed text-muted"
+        className="clay-inset h-56 overflow-y-auto whitespace-pre-line rounded-card p-4 text-xs leading-relaxed text-ink/80"
       >
         {dataConsent.clauseText}
       </div>
